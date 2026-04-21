@@ -14,7 +14,7 @@
           <p>Personal Moodboard Generator</p>
         </div>
 
-        <h1 id="app-title">Describe a mood. Get a board.</h1>
+        <h1 id="app-title">Describe a mood. Choose a board.</h1>
 
         <form id="moodboard-form" class="prompt-form">
           <label for="prompt">Mood prompt</label>
@@ -35,31 +35,39 @@
         </form>
       </section>
 
-      <section class="preview" aria-live="polite">
+      <section class="workspace" aria-live="polite">
+        <nav class="tabs" aria-label="Moodboard views">
+          <button type="button" id="generate-tab" class="tab-button active">Generate</button>
+          <button type="button" id="gallery-tab" class="tab-button">Gallery</button>
+        </nav>
+
         <div id="empty-state" class="empty-state">
           <span>Waiting for your first prompt</span>
         </div>
 
-        <article id="result" class="result hidden">
-          <img id="moodboard-image" alt="Generated moodboard" />
-
-          <div class="details">
+        <section id="results-section" class="panel tab-panel hidden" aria-labelledby="results-title">
+          <div class="section-heading">
             <div>
-              <p class="label">Dominant mood</p>
-              <h2 id="dominant-mood"></h2>
+              <p class="label">Generated options</p>
+              <h2 id="results-title">Moodboards</h2>
             </div>
-
-            <div>
-              <p class="label">Palette</p>
-              <div id="palette" class="palette"></div>
-            </div>
-
-            <div>
-              <p class="label">Keywords</p>
-              <div id="keywords" class="keywords"></div>
-            </div>
+            <p id="results-meta" class="subtle"></p>
           </div>
-        </article>
+
+          <div id="moodboard-list" class="moodboard-list"></div>
+        </section>
+
+        <section id="gallery-section" class="panel tab-panel hidden" aria-labelledby="gallery-title">
+          <div class="section-heading">
+            <div>
+              <p class="label">Saved gallery</p>
+              <h2 id="gallery-title">Your picks</h2>
+            </div>
+            <p id="gallery-count" class="subtle"></p>
+          </div>
+
+          <div id="saved-gallery" class="moodboard-list compact"></div>
+        </section>
       </section>
     </main>
 
