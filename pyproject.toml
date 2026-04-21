@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "personal-moodboard-generator"
+version = "0.1.0"
+description = "A CLI that turns a mood prompt into a personalized color-and-image moodboard."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "Pillow>=10.0.0",
+    "rich>=13.0.0",
+    "uvicorn>=0.27.0",
+]
+
+[project.scripts]
+moodboard = "moodboard.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

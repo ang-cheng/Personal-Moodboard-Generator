@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Personal Moodboard Generator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="composer" aria-labelledby="app-title">
+        <div class="brand-row">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <p>Personal Moodboard Generator</p>
+        </div>
+
+        <h1 id="app-title">Describe a mood. Get a board.</h1>
+
+        <form id="moodboard-form" class="prompt-form">
+          <label for="prompt">Mood prompt</label>
+          <textarea
+            id="prompt"
+            name="prompt"
+            rows="5"
+            minlength="3"
+            maxlength="280"
+            required
+            placeholder="calm quiet morning with gentle light"
+          ></textarea>
+
+          <div class="form-actions">
+            <button type="submit" id="generate-button">Generate</button>
+            <span id="status" role="status" aria-live="polite"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="preview" aria-live="polite">
+        <div id="empty-state" class="empty-state">
+          <span>Waiting for your first prompt</span>
+        </div>
+
+        <article id="result" class="result hidden">
+          <img id="moodboard-image" alt="Generated moodboard" />
+
+          <div class="details">
+            <div>
+              <p class="label">Dominant mood</p>
+              <h2 id="dominant-mood"></h2>
+            </div>
+
+            <div>
+              <p class="label">Palette</p>
+              <div id="palette" class="palette"></div>
+            </div>
+
+            <div>
+              <p class="label">Keywords</p>
+              <div id="keywords" class="keywords"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
