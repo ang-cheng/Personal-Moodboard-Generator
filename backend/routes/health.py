@@ -7,7 +7,7 @@ This module provides endpoints for monitoring application health status.
 from flask import Blueprint
 from utils.response import success_response
 
-# Create health blueprint
+# Health checks should stay quick.
 health_bp = Blueprint("health", __name__, url_prefix="/api/health")
 
 

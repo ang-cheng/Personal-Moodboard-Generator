@@ -77,6 +77,7 @@ def generate_moodboards():
         }
     """
     payload = validate_generate_moodboards_payload(_get_json_body())
+    # Make fresh helpers for this request.
     generator = _create_moodboard_generator()
 
     result = generator.generate_moodboards(
@@ -87,6 +88,7 @@ def generate_moodboards():
     )
 
     data = {
+        # Send back only what the page needs.
         "query": result["query"],
         "num_clusters": result["num_clusters"],
         "moodboards": result["moodboards"],
@@ -94,6 +96,7 @@ def generate_moodboards():
 
     meta = {}
     if "processing_time_seconds" in result:
+        # Milliseconds look nicer on the page.
         meta["processing_time_ms"] = round(result["processing_time_seconds"] * 1000)
 
     body, status_code = success_response(data=data, meta=meta)
@@ -122,6 +125,7 @@ def preview_features():
         }
     """
     payload = validate_preview_features_payload(_get_json_body())
+    # Preview uses the same helpers.
     generator = _create_moodboard_generator()
 
     result = generator.preview_features(

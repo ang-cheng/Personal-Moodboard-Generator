@@ -25,18 +25,18 @@ def create_app(config_name=None):
     Returns:
         Configured Flask application instance.
     """
-    # Get configuration
+    # Pick the settings first.
     config = get_config(config_name)
     
-    # Create Flask app
+    # Make the Flask app and add those settings.
     app = Flask(__name__)
     app.config.from_object(config)
     
-    # Register blueprints
+    # Add the health and moodboard routes.
     app.register_blueprint(health_bp)
     app.register_blueprint(moodboards_bp)
     
-    # Register error handlers
+    # Add browser headers and error handling.
     register_error_handlers(app)
     register_cors_headers(app)
     
@@ -53,6 +53,7 @@ def register_cors_headers(app):
 
     @app.after_request
     def add_cors_headers(response):
+        # The frontend runs on a different local port.
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
@@ -70,6 +71,7 @@ def register_error_handlers(app):
     @app.errorhandler(MoodboardGeneratorError)
     def handle_moodboard_error(error):
         """Handle custom application errors."""
+        # These errors already know what to send back.
         body, status_code = error_response(
             error.error_code,
             error.message,
@@ -80,6 +82,7 @@ def register_error_handlers(app):
     @app.errorhandler(HTTPException)
     def handle_http_error(error):
         """Handle Flask/Werkzeug HTTP errors such as 400 and 404."""
+        # Make Flask errors look like our app errors.
         code = "HTTP_ERROR"
 
         if error.code == 400:
@@ -96,6 +99,7 @@ def register_error_handlers(app):
     @app.errorhandler(Exception)
     def handle_unexpected_error(error):
         """Handle unexpected errors without leaking internal details."""
+        # Do not show crash details in the browser.
         body, status_code = error_response(
             "INTERNAL_ERROR",
             "Internal server error",
@@ -105,14 +109,13 @@ def register_error_handlers(app):
 
 
 if __name__ == "__main__":
-    # Create the application with development configuration
+    # Start with the local settings.
     app = create_app()
     
-    # Extract host and port from configuration
+    # Read where the server should run.
     host = app.config.get("HOST", "0.0.0.0")
     port = app.config.get("PORT", 5000)
     debug = app.config.get("DEBUG", False)
     
-    # Run development server
-    # Note: The debug parameter is set based on the Flask app's DEBUG setting
+    # Run the local server.
     app.run(host=host, port=port, debug=debug)

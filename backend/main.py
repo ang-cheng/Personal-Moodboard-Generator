@@ -1,4 +1,4 @@
-"""FastAPI backend for generating and serving moodboards."""
+"""Legacy FastAPI backend for generating and serving moodboards."""
 
 from __future__ import annotations
 
@@ -11,11 +11,13 @@ from pydantic import BaseModel, Field
 
 from moodboard.generator import MoodboardGenerator
 
+# Older generated PNGs and JSON files live here.
 OUTPUT_DIR = Path("output")
 
 app = FastAPI(title="Personal Moodboard Generator API")
 app.add_middleware(
     CORSMiddleware,
+    # Let the older local frontend URLs work.
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -28,6 +30,7 @@ app.add_middleware(
 )
 
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+# Serve generated files so the browser can display them.
 app.mount("/output", StaticFiles(directory=OUTPUT_DIR), name="output")
 
 
@@ -56,6 +59,7 @@ def health_check() -> dict[str, str]:
 @app.post("/api/moodboards", response_model=MoodboardResponse)
 def create_moodboard(request: MoodboardRequest) -> MoodboardResponse:
     """Generate a moodboard image and return URLs the frontend can display."""
+    # This route uses the older PNG renderer.
     generator = MoodboardGenerator(output_dir=OUTPUT_DIR)
     image_path, metadata_path, profile = generator.create(request.prompt)
 

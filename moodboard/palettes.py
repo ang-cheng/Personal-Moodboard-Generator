@@ -1,5 +1,6 @@
 """Mood keyword palettes used by the generator."""
 
+# Hand-picked colors for each mood.
 MOOD_PALETTES = {
     "calm": ["#D8E2DC", "#FFE5D9", "#FFCAD4", "#F4ACB7", "#9D8189"],
     "cozy": ["#F4E1C1", "#DDB892", "#B08968", "#7F5539", "#9C6644"],
@@ -10,8 +11,10 @@ MOOD_PALETTES = {
     "bold": ["#111111", "#F72585", "#7209B7", "#3A0CA3", "#4CC9F0"],
 }
 
+# Use this when no mood matches.
 DEFAULT_PALETTE = ["#2B2D42", "#8D99AE", "#EDF2F4", "#EF233C", "#D90429"]
 
+# Keep these short and easy to read.
 MOOD_KEYWORDS = {
     "calm": {"calm", "peaceful", "soft", "quiet", "gentle", "serene"},
     "cozy": {"cozy", "warm", "home", "comfort", "autumn", "snug"},

@@ -3,21 +3,28 @@ const DEFAULT_NUM_IMAGES = 24;
 const DEFAULT_NUM_CLUSTERS = 3;
 const FEATURE_MODE = "dominant_colors";
 
+// This is what the page is working with right now.
 const state = {
   activeTab: "generate",
+  currentBoardName: "",
   currentPrompt: "",
   isLoading: false,
   error: "",
   moodboards: [],
   selectedMoodboardId: null,
+  editingMoodboardId: null,
   savedGalleryItems: [],
   processingTimeMs: null,
 };
 
+// Grab the page pieces we need.
 const form = document.querySelector("#moodboard-form");
+const composer = document.querySelector(".composer");
+const boardNameInput = document.querySelector("#board-name");
 const promptInput = document.querySelector("#prompt");
 const button = document.querySelector("#generate-button");
-const statusText = document.querySelector("#status");
+const viewGalleryButton = document.querySelector("#view-gallery-button");
+const createBoardButton = document.querySelector("#create-board-button");
 const generateTab = document.querySelector("#generate-tab");
 const galleryTab = document.querySelector("#gallery-tab");
 const emptyState = document.querySelector("#empty-state");
@@ -29,15 +36,18 @@ const galleryCount = document.querySelector("#gallery-count");
 const savedGallery = document.querySelector("#saved-gallery");
 
 function setState(updates) {
+  // Redraw the page after something changes.
   Object.assign(state, updates);
   render();
 }
 
-function setStatus(message) {
-  statusText.textContent = message;
+function createGalleryKey(moodboard, prompt = state.currentPrompt) {
+  // Add the prompt so saved boards do not get mixed up.
+  return `${prompt.trim().toLowerCase()}::${moodboard.id}`;
 }
 
 async function generateMoodboards(userPrompt) {
+  // Ask for a few board options.
   const response = await fetch(`${API_BASE_URL}/api/moodboards/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -60,61 +70,63 @@ async function generateMoodboards(userPrompt) {
   return payload;
 }
 
-function saveMoodboard(moodboardId) {
-  const moodboard = state.moodboards.find((item) => item.id === moodboardId);
+function saveMoodboard(galleryKey) {
+  // Keep a copy of this board before a new prompt replaces it.
+  const moodboard = state.moodboards.find((item) => createGalleryKey(item) === galleryKey);
   if (!moodboard) return;
 
-  const alreadySaved = state.savedGalleryItems.some((item) => item.id === moodboardId);
+  const alreadySaved = state.savedGalleryItems.some((item) => item.galleryKey === galleryKey);
   if (alreadySaved) {
-    setState({ selectedMoodboardId: moodboardId, activeTab: "gallery" });
-    setStatus("Already saved");
+    setState({ selectedMoodboardId: galleryKey, activeTab: "gallery" });
     return;
   }
 
-  const fallbackName = moodboard.title || "Saved Moodboard";
+  const fallbackName =
+    moodboard.boardName || moodboard.title || state.currentBoardName || "Saved Moodboard";
   const customName = window.prompt("Name this saved moodboard", fallbackName);
   const savedTitle = customName?.trim() || fallbackName;
 
   setState({
     activeTab: "gallery",
-    selectedMoodboardId: moodboardId,
+    selectedMoodboardId: galleryKey,
     savedGalleryItems: [
       ...state.savedGalleryItems,
       {
         ...moodboard,
+        galleryKey,
+        sourcePrompt: state.currentPrompt,
+        boardName: moodboard.boardName || state.currentBoardName,
         savedTitle,
         savedAt: new Date().toISOString(),
       },
     ],
   });
-  setStatus("Saved to gallery");
 }
 
-function renameSavedMoodboard(moodboardId) {
-  const moodboard = state.savedGalleryItems.find((item) => item.id === moodboardId);
-  if (!moodboard) return;
+function renameSavedMoodboard(galleryKey) {
+  setState({ editingMoodboardId: galleryKey, selectedMoodboardId: galleryKey });
+}
 
-  const currentName = moodboard.savedTitle || moodboard.title || "Saved Moodboard";
-  const nextName = window.prompt("Rename this moodboard", currentName);
-  if (nextName === null) return;
-
-  const savedTitle = nextName.trim();
-  if (!savedTitle) {
-    setStatus("Name was not changed");
-    return;
-  }
+function saveRenamedMoodboard(galleryKey, titleInput) {
+  // Enter saves the new name, as long as it is not blank.
+  const savedTitle = titleInput.value.trim();
+  if (!savedTitle) return;
 
   setState({
+    editingMoodboardId: null,
     savedGalleryItems: state.savedGalleryItems.map((item) =>
-      item.id === moodboardId ? { ...item, savedTitle } : item,
+      item.galleryKey === galleryKey ? { ...item, savedTitle } : item,
     ),
-    selectedMoodboardId: moodboardId,
+    selectedMoodboardId: galleryKey,
   });
-  setStatus("Renamed");
 }
 
-function unsaveMoodboard(moodboardId) {
-  const moodboard = state.savedGalleryItems.find((item) => item.id === moodboardId);
+function cancelRenameMoodboard() {
+  setState({ editingMoodboardId: null });
+}
+
+function unsaveMoodboard(galleryKey) {
+  const moodboard = state.savedGalleryItems.find((item) => item.galleryKey === galleryKey);
   if (!moodboard) return;
 
   const title = moodboard.savedTitle || moodboard.title || "this moodboard";
@@ -122,11 +134,12 @@ function unsaveMoodboard(moodboardId) {
   if (!shouldRemove) return;
 
   setState({
-    savedGalleryItems: state.savedGalleryItems.filter((item) => item.id !== moodboardId),
+    savedGalleryItems: state.savedGalleryItems.filter((item) => item.galleryKey !== galleryKey),
+    editingMoodboardId:
+      state.editingMoodboardId === galleryKey ? null : state.editingMoodboardId,
     selectedMoodboardId:
-      state.selectedMoodboardId === moodboardId ? null : state.selectedMoodboardId,
+      state.selectedMoodboardId === galleryKey ? null : state.selectedMoodboardId,
   });
-  setStatus("Removed from gallery");
 }
 
 function switchTab(activeTab) {
@@ -136,24 +149,19 @@ function switchTab(activeTab) {
 function render() {
   button.disabled = state.isLoading;
 
+  // Mark the active tab for people using screen readers.
   generateTab.classList.toggle("active", state.activeTab === "generate");
   galleryTab.classList.toggle("active", state.activeTab === "gallery");
   generateTab.setAttribute("aria-selected", String(state.activeTab === "generate"));
   galleryTab.setAttribute("aria-selected", String(state.activeTab === "gallery"));
-
-  if (state.isLoading) {
-    setStatus("Generating...");
-  } else if (state.error) {
-    setStatus(state.error);
-  } else if (state.moodboards.length > 0) {
-    setStatus("Done");
-  }
+  composer.classList.toggle("hidden", state.activeTab === "gallery");
 
   renderMoodboardResults();
   renderSavedGallery();
 }
 
 function renderMoodboardResults() {
+  // Decide what to show on the Generate tab.
   const hasMoodboards = state.moodboards.length > 0;
   const hasPrompt = state.currentPrompt.length > 0;
   const isGenerateTab = state.activeTab === "generate";
@@ -189,7 +197,9 @@ function renderMoodboardResults() {
     ...state.moodboards.map((moodboard) =>
       createMoodboardCard({
         moodboard,
-        isSaved: state.savedGalleryItems.some((item) => item.id === moodboard.id),
+        isSaved: state.savedGalleryItems.some(
+          (item) => item.galleryKey === createGalleryKey(moodboard),
+        ),
         onSave: saveMoodboard,
       }),
     ),
@@ -197,6 +207,7 @@ function renderMoodboardResults() {
 }
 
 function renderSavedGallery() {
+  // For now, saved boards stay in this browser session.
   const isGalleryTab = state.activeTab === "gallery";
   gallerySection.classList.toggle("hidden", !isGalleryTab);
   galleryCount.textContent = `${state.savedGalleryItems.length} saved`;
@@ -232,20 +243,51 @@ function createMoodboardCard({
   onRename = null,
   onUnsave = null,
 }) {
+  // New boards and saved boards use the same card.
   const card = document.createElement("article");
   card.className = "moodboard-card";
+  const galleryKey = moodboard.galleryKey || createGalleryKey(moodboard);
   if (isCompact) {
     card.classList.add("gallery-card");
   }
-  if (state.selectedMoodboardId === moodboard.id) {
+  if (state.selectedMoodboardId === galleryKey) {
     card.classList.add("selected");
   }
 
   const header = document.createElement("div");
   header.className = "card-header";
 
-  const title = document.createElement("h3");
-  title.textContent = moodboard.savedTitle || moodboard.title || "Moodboard";
+  const currentTitle =
+    moodboard.savedTitle || moodboard.boardName || moodboard.title || "Moodboard";
+  const isEditing = state.editingMoodboardId === galleryKey;
+
+  const titleArea = document.createElement("div");
+  titleArea.className = "card-title-area";
+
+  if (isEditing) {
+    // Turn the title into a text box while renaming.
+    const titleInput = document.createElement("input");
+    titleInput.className = "rename-input";
+    titleInput.value = currentTitle;
+    titleInput.setAttribute("aria-label", "Moodboard name");
+
+    titleInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        saveRenamedMoodboard(galleryKey, titleInput);
+      }
+
+      if (event.key === "Escape") {
+        cancelRenameMoodboard();
+      }
+    });
+
+    titleArea.append(titleInput);
+    requestAnimationFrame(() => titleInput.focus());
+  } else {
+    const title = document.createElement("h3");
+    title.textContent = currentTitle;
+    titleArea.append(title);
+  }
 
   const actions = document.createElement("div");
   actions.className = "card-actions";
@@ -256,16 +298,16 @@ function createMoodboardCard({
     saveButton.className = "save-button";
     saveButton.textContent = isSaved ? "Saved" : "Save to Gallery";
     saveButton.disabled = isSaved;
-    saveButton.addEventListener("click", () => onSave(moodboard.id));
+    saveButton.addEventListener("click", () => onSave(galleryKey));
     actions.append(saveButton);
   }
 
-  if (onRename) {
+  if (onRename && !isEditing) {
     const renameButton = document.createElement("button");
     renameButton.type = "button";
     renameButton.className = "secondary-button";
     renameButton.textContent = "Rename";
-    renameButton.addEventListener("click", () => onRename(moodboard.id));
+    renameButton.addEventListener("click", () => onRename(galleryKey));
     actions.append(renameButton);
   }
 
@@ -274,11 +316,11 @@ function createMoodboardCard({
     unsaveButton.type = "button";
     unsaveButton.className = "danger-button";
     unsaveButton.textContent = "Unsave";
-    unsaveButton.addEventListener("click", () => onUnsave(moodboard.id));
+    unsaveButton.addEventListener("click", () => onUnsave(galleryKey));
     actions.append(unsaveButton);
   }
 
-  header.append(title, actions);
+  header.append(titleArea, actions);
 
   const palette = createPalette(moodboard.summary?.dominant_hex_colors || []);
   const imageGrid = createImageGrid(moodboard.images || [], isCompact);
@@ -288,6 +330,7 @@ function createMoodboardCard({
 }
 
 function createPalette(colors) {
+  // Show the board colors as small squares.
   const palette = document.createElement("div");
   palette.className = "palette";
 
@@ -303,13 +346,14 @@ function createPalette(colors) {
 }
 
 function createImageGrid(images, isCompact = false) {
+  // Show six images so every card keeps the same shape.
   const grid = document.createElement("div");
   grid.className = "image-grid";
   if (isCompact) {
     grid.classList.add("compact-grid");
   }
 
-  images.slice(0, isCompact ? 6 : 8).forEach((image) => {
+  images.slice(0, 6).forEach((image) => {
     const img = document.createElement("img");
     img.src = image.thumbnail_url || image.image_url;
     img.alt = image.alt_text || "Moodboard image";
@@ -333,15 +377,20 @@ function createEmptyMessage(message) {
 
 generateTab.addEventListener("click", () => switchTab("generate"));
 galleryTab.addEventListener("click", () => switchTab("gallery"));
+viewGalleryButton.addEventListener("click", () => switchTab("gallery"));
+createBoardButton.addEventListener("click", () => switchTab("generate"));
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
+  // The board name is just a label; the prompt finds the images.
   const userPrompt = promptInput.value.trim();
+  const boardName = boardNameInput.value.trim();
   if (!userPrompt) return;
 
   setState({
     activeTab: "generate",
+    currentBoardName: boardName,
     currentPrompt: userPrompt,
     isLoading: true,
     error: "",
@@ -354,7 +403,10 @@ form.addEventListener("submit", async (event) => {
     const payload = await generateMoodboards(userPrompt);
 
     setState({
-      moodboards: payload.data?.moodboards || [],
+      moodboards: (payload.data?.moodboards || []).map((moodboard) => ({
+        ...moodboard,
+        boardName,
+      })),
       processingTimeMs: payload.meta?.processing_time_ms ?? null,
       isLoading: false,
     });

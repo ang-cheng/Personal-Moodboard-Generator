@@ -77,6 +77,7 @@ class MoodboardGenerator:
         self._validate_feature_mode(feature_mode)
 
         try:
+            # Preview does the early steps, then stops before making boards.
             image_records = self._search_images(query, num_images)
             loaded_images = self.image_loader.batch_load_images(image_records)
             featured_items, skipped_counts = self._extract_feature_items(
@@ -136,6 +137,7 @@ class MoodboardGenerator:
         self._validate_feature_mode(feature_mode)
 
         try:
+            # Get color info before making the groups.
             image_records = self._search_images(query, num_images)
             loaded_images = self.image_loader.batch_load_images(image_records)
             featured_items, skipped_counts = self._extract_feature_items(
@@ -198,17 +200,19 @@ class MoodboardGenerator:
 
         for bundle in loaded_images:
             try:
+                # If one image fails, keep using the rest.
                 features = self.feature_extractor.extract_features(
                     bundle["image"],
                     feature_mode=feature_mode,
                 )
             except Exception:
-                # A single bad image should not stop the whole batch.
+                # Skip it and keep going.
                 skipped_reasons["feature_extraction_failed"] += 1
                 continue
 
             featured_items.append(
                 {
+                    # Do not send the big image data back to the browser.
                     "id": bundle.get("id"),
                     "image_url": bundle.get("image_url"),
                     "metadata": bundle.get("metadata", {}),

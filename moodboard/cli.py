@@ -13,6 +13,7 @@ from moodboard.generator import MoodboardGenerator
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
+    # Keep the command line simple.
     parser = argparse.ArgumentParser(
         description="Generate a personalized moodboard image from a mood prompt."
     )
@@ -29,10 +30,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     """Run the command-line application."""
     args = build_parser().parse_args()
+    # Treat the output folder like a path.
     generator = MoodboardGenerator(output_dir=Path(args.output_dir))
     image_path, metadata_path, profile = generator.create(args.prompt)
 
     console = Console()
+    # Show a small summary when it finishes.
     table = Table(title="Moodboard Created")
     table.add_column("Field", style="cyan", no_wrap=True)
     table.add_column("Value", style="white")

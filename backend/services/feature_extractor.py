@@ -72,27 +72,24 @@ class FeatureExtractor:
         try:
             self._validate_image(image)
 
+            # Let callers pick how many colors they want.
             requested_colors = kwargs.get("num_colors")
             if requested_colors is None and args:
-                # Older project code passed image_url as the first extra arg and
-                # num_colors as the second. This keeps that call shape harmless.
+                # Older code put the color count in the second spot.
                 requested_colors = args[1] if len(args) > 1 else None
 
             num_colors = int(requested_colors or self.num_colors)
 
             small_image = self._resize_for_speed(image)
 
-            # OpenCV loads images as BGR, but color values are easier to reason
-            # about and display as RGB/hex.
+            # Put the colors in normal RGB order.
             rgb_image = cv2.cvtColor(small_image, cv2.COLOR_BGR2RGB)
 
-            # KMeans expects a 2D table: one row per pixel, three columns for
-            # red, green, and blue.
+            # Make one row for each pixel.
             pixels = rgb_image.reshape(-1, 3).astype(np.float32)
             dominant_rgb_colors = self._find_dominant_colors(pixels, num_colors)
 
-            # Flatten colors into one numeric vector for clustering. Normalizing
-            # keeps every value between 0 and 1, which is friendly for ML models.
+            # Squish the color numbers down to 0-1.
             feature_vector = (dominant_rgb_colors.flatten() / 255.0).tolist()
             dominant_hex_colors = [
                 self.rgb_to_hex(tuple(color)) for color in dominant_rgb_colors
@@ -165,6 +162,7 @@ class FeatureExtractor:
             raise ValidationError("num_colors must be at least 1.")
 
         unique_pixel_count = np.unique(pixels, axis=0).shape[0]
+        # Do not ask for more colors than exist.
         cluster_count = min(num_colors, unique_pixel_count)
 
         kmeans = KMeans(

@@ -7,16 +7,36 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <section class="composer" aria-labelledby="app-title">
-        <div class="brand-row">
-          <span class="brand-mark" aria-hidden="true"></span>
-          <p>Personal Moodboard Generator</p>
-        </div>
+    <!-- Keep the title and tabs at the top. -->
+    <header class="site-header">
+      <div class="brand-row">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <p>Personal Moodboard Generator</p>
+      </div>
 
-        <h1 id="app-title">Describe a mood. Choose a board.</h1>
+      <nav class="tabs" aria-label="Moodboard views">
+        <button type="button" id="generate-tab" class="tab-button active">Generate</button>
+        <button type="button" id="gallery-tab" class="tab-button">Gallery</button>
+      </nav>
+    </header>
+
+    <main class="app-shell">
+      <!-- Hide this on the Gallery tab so saved boards have room. -->
+      <section class="composer" aria-labelledby="app-title">
+        <h1 id="app-title">
+          <span>Inspire Your <span class="headline-emphasis">Mood</span>.</span>
+          <span>Craft an <span class="headline-emphasis">Aesthetic</span>.</span>
+        </h1>
 
         <form id="moodboard-form" class="prompt-form">
+          <label for="board-name">Board Name</label>
+          <input
+            id="board-name"
+            name="board-name"
+            maxlength="80"
+            placeholder="Golden hour study"
+          />
+
           <label for="prompt">Mood prompt</label>
           <textarea
             id="prompt"
@@ -30,17 +50,15 @@
 
           <div class="form-actions">
             <button type="submit" id="generate-button">Generate</button>
-            <span id="status" role="status" aria-live="polite"></span>
+            <button type="button" id="view-gallery-button" class="secondary-button">
+              View gallery
+            </button>
           </div>
         </form>
       </section>
 
       <section class="workspace" aria-live="polite">
-        <nav class="tabs" aria-label="Moodboard views">
-          <button type="button" id="generate-tab" class="tab-button active">Generate</button>
-          <button type="button" id="gallery-tab" class="tab-button">Gallery</button>
-        </nav>
-
+        <!-- Show this before the first board is made. -->
         <div id="empty-state" class="empty-state">
           <span>Waiting for your first prompt</span>
         </div>
@@ -64,6 +82,11 @@
               <h2 id="gallery-title">Your picks</h2>
             </div>
             <p id="gallery-count" class="subtle"></p>
+          </div>
+
+          <div class="gallery-actions">
+            <!-- Go back to the form without leaving the page. -->
+            <button type="button" id="create-board-button">Create Board</button>
           </div>
 
           <div id="saved-gallery" class="moodboard-list compact"></div>

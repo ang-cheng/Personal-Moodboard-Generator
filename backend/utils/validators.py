@@ -11,6 +11,7 @@ from utils.errors import ValidationError
 
 DEFAULT_NUM_IMAGES = 24
 DEFAULT_NUM_CLUSTERS = 3
+# Keep requests from getting too big.
 MIN_NUM_IMAGES = 1
 MAX_NUM_IMAGES = 60
 MIN_NUM_CLUSTERS = 1
@@ -53,6 +54,7 @@ def validate_string(
     if pattern and not re.match(pattern, value):
         raise ValidationError(f"{field_name} format is invalid.")
     
+    # Leave trimming up to the caller.
     return value
 
 
@@ -154,6 +156,7 @@ def validate_num_images(value: Any = None) -> int:
     requests and image processing work reasonable for a classroom project.
     """
     if value is None:
+        # Match the frontend default.
         return DEFAULT_NUM_IMAGES
 
     num_images = validate_integer(
@@ -229,6 +232,7 @@ def validate_generate_moodboards_payload(payload: Any) -> dict:
     num_images = validate_num_images(payload.get("num_images"))
 
     return {
+        # Check this after image count is known.
         "query": validate_query(payload.get("query")),
         "num_images": num_images,
         "num_clusters": validate_num_clusters(

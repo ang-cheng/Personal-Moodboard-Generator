@@ -18,6 +18,7 @@ class MoodboardGeneratorError(Exception):
             status_code: HTTP status code to return.
             error_code: Stable machine-readable code for clients.
         """
+        # Keep the details on the error.
         self.message = message
         self.status_code = status_code
         self.error_code = error_code
@@ -59,5 +60,5 @@ class NotFoundError(MoodboardGeneratorError):
         super().__init__(message, status_code=404, error_code=error_code)
 
 
-# Backwards-compatible name used by older service code.
+# Older code still uses this name.
 ExternalServiceError = UpstreamAPIError

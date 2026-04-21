@@ -5,6 +5,7 @@ from moodboard.palettes import DEFAULT_PALETTE, MOOD_PALETTES
 def test_analyze_prompt_detects_known_mood() -> None:
     generator = MoodboardGenerator()
 
+    # Calm words should pick the calm palette.
     profile = generator.analyze_prompt("A calm quiet morning with gentle light")
 
     assert profile.dominant_mood == "calm"
@@ -15,6 +16,7 @@ def test_analyze_prompt_detects_known_mood() -> None:
 def test_analyze_prompt_uses_default_palette_for_custom_prompt() -> None:
     generator = MoodboardGenerator()
 
+    # Random words should use the fallback palette.
     profile = generator.analyze_prompt("museum marble espresso deadline")
 
     assert profile.dominant_mood == "custom"
@@ -26,6 +28,7 @@ def test_save_metadata_writes_profile_json(tmp_path) -> None:
     profile = generator.analyze_prompt("bold neon confident studio")
     image_path = tmp_path / "board.png"
 
+    # Saving metadata should create the JSON file.
     metadata_path = generator.save_metadata(profile, image_path)
 
     assert metadata_path.exists()

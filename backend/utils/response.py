@@ -26,6 +26,7 @@ def success_response(data: Any, meta: Optional[dict] = None, status_code: int = 
     }
 
     if meta is not None:
+        # Put extra details like timing here.
         body["meta"] = meta
 
     return body, status_code
@@ -44,6 +45,7 @@ def error_response(code: str, message: str, status_code: int) -> tuple:
         Tuple of (response_dict, status_code) for Flask response.
     """
     return (
+        # Keep errors in one familiar shape.
         {
             "ok": False,
             "error": {

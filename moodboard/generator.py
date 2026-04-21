@@ -42,9 +42,11 @@ class MoodboardGenerator:
 
     def analyze_prompt(self, prompt: str) -> MoodProfile:
         """Infer a dominant mood, supporting keywords, and palette from text."""
+        # Pull out words and ignore punctuation.
         words = re.findall(r"[a-zA-Z']+", prompt.lower())
         word_counts = Counter(words)
 
+        # See which mood words appear.
         mood_scores = {
             mood: sum(word_counts[word] for word in keywords)
             for mood, keywords in MOOD_KEYWORDS.items()
@@ -52,11 +54,13 @@ class MoodboardGenerator:
         dominant_mood, score = max(mood_scores.items(), key=lambda item: item[1])
 
         if score == 0:
+            # If nothing matches, use the default colors.
             dominant_mood = "custom"
             palette = DEFAULT_PALETTE
         else:
             palette = MOOD_PALETTES[dominant_mood]
 
+        # Use repeated words as little labels.
         keywords = [word for word, _ in word_counts.most_common(8)]
         return MoodProfile(
             prompt=prompt,
@@ -70,11 +74,13 @@ class MoodboardGenerator:
         from PIL import Image, ImageDraw
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        # Add the time so old boards are not overwritten.
         filename = filename or f"{profile.dominant_mood}-{int(time.time())}.png"
         image_path = self.output_dir / filename
 
         board_width = 1200
         board_height = 800
+        # Start with the first color before drawing more.
         image = Image.new("RGB", (board_width, board_height), profile.palette[0])
         draw = ImageDraw.Draw(image)
         font_title = self._load_font(size=52)
@@ -91,6 +97,7 @@ class MoodboardGenerator:
     def save_metadata(self, profile: MoodProfile, image_path: Path) -> Path:
         """Persist the generation details beside the rendered image."""
         metadata_path = image_path.with_suffix(".json")
+        # Save a matching JSON file with the board details.
         metadata = profile.to_dict() | {
             "image_path": str(image_path),
             "created_at_unix": int(time.time()),
@@ -111,6 +118,7 @@ class MoodboardGenerator:
         from PIL import ImageFont
 
         try:
+            # Try Arial first, then use Pillow's backup font.
             return ImageFont.truetype("Arial.ttf", size=size)
         except OSError:
             return ImageFont.load_default()
@@ -120,6 +128,7 @@ class MoodboardGenerator:
         """Draw the large color-strip background."""
         stripe_width = width // len(palette)
         for index, color in enumerate(palette):
+            # Let the last stripe take leftover space.
             x0 = index * stripe_width
             x1 = width if index == len(palette) - 1 else (index + 1) * stripe_width
             draw.rectangle((x0, 0, x1, 800), fill=color)
@@ -137,6 +146,7 @@ class MoodboardGenerator:
         draw.text((110, 130), profile.dominant_mood.title(), fill="#111111", font=font_title)
 
         wrapped_prompt = textwrap.fill(profile.prompt, width=58)
+        # Wrap long prompts inside the white box.
         draw.multiline_text(
             (110, 220),
             wrapped_prompt,
@@ -161,11 +171,13 @@ class MoodboardGenerator:
         for index, keyword in enumerate(keywords[:8]):
             color = palette[index % len(palette)]
             tile = (x, y, x + 230, y + 95)
+            # Add a small color strip beside each word.
             draw.rounded_rectangle(tile, radius=18, fill="#FFFFFF")
             draw.rectangle((x, y, x + 18, y + 95), fill=color)
             draw.text((x + 36, y + 34), keyword.title(), fill="#111111", font=font)
 
             x += 270
             if x > 930:
+                # Start a new row after four words.
                 x = 95
                 y += 130

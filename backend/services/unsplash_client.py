@@ -65,20 +65,20 @@ class UnsplashClient:
             ValidationError: If no access key is provided or configured.
         
         Example:
-            >>> # Use default config values
+            >>> # Normal setup
             >>> client = UnsplashClient()
             >>> 
-            >>> # Override with custom values
+            >>> # Custom setup
             >>> client = UnsplashClient(
             ...     access_key="my-key",
             ...     base_url="https://custom-api.com",
             ...     timeout=20
             ... )
         """
-        # Get access key from parameter or config
+        # Use passed-in settings when there are any.
         self.access_key = access_key or Config.UNSPLASH_ACCESS_KEY
         
-        # Validate that we have an access key
+        # Unsplash needs a key.
         if not self.access_key:
             raise ValidationError(
                 "Unsplash API access key is not configured. "
@@ -86,14 +86,13 @@ class UnsplashClient:
                 error_code="MISSING_UNSPLASH_KEY",
             )
         
-        # Set base URL from parameter or config
+        # Use the given API URL, or the default.
         self.base_url = (base_url or Config.UNSPLASH_BASE_URL).rstrip("/")
         
-        # Set timeout from parameter or config
+        # Use the given timeout, or the default.
         self.timeout = timeout or Config.EXTERNAL_API_TIMEOUT
         
-        # Set up HTTP headers for API authentication
-        # All Unsplash API requests require these headers
+        # Add the headers Unsplash wants.
         self.headers = {
             "Authorization": f"Client-ID {self.access_key}",
             "Accept-Version": "v1",
@@ -160,42 +159,36 @@ class UnsplashClient:
             ... except ExternalServiceError as e:
             ...     print(f"Failed to search: {e}")
         """
-        # ====================================================================
-        # INPUT VALIDATION
-        # ====================================================================
+        # Check the search before calling Unsplash.
         
-        # Check that query is a non-empty string
+        # The search needs some text.
         if not isinstance(query, str) or not query.strip():
             raise ValidationError(
                 "Search query must be a non-empty string.",
                 error_code="INVALID_QUERY",
             )
         
-        # Clamp per_page to valid range
-        # Unsplash API allows maximum 30 results per page
+        # Unsplash only allows 30 photos per page.
         if per_page < 1:
             per_page = 1
         elif per_page > 30:
             per_page = 30
         
-        # ====================================================================
-        # MAKE API REQUEST
-        # ====================================================================
+        # Ask Unsplash for photos.
         
         try:
-            # Build the API endpoint URL
+            # Build the search URL.
             endpoint = f"{self.base_url}/search/photos"
             
-            # Build query parameters
+            # Start with the most relevant first page.
             params = {
                 "query": query.strip(),
                 "per_page": per_page,
-                "page": 1,  # Always get first page
-                "order_by": "relevant",  # Sort by relevance
+                "page": 1,  # Start on page one.
+                "order_by": "relevant",  # Better matches first.
             }
             
-            # Make the HTTP GET request to Unsplash API
-            # Set timeout to avoid hanging if the API is slow
+            # Make the request without waiting forever.
             response = requests.get(
                 endpoint,
                 headers=self.headers,
@@ -203,47 +196,43 @@ class UnsplashClient:
                 timeout=self.timeout,
             )
             
-            # Raise an exception if the response status code indicates an error
-            # (e.g., 401 Unauthorized, 404 Not Found, 500 Server Error)
+            # Send request problems to the handlers below.
             response.raise_for_status()
             
-            # Parse the JSON response
+            # Read the JSON from Unsplash.
             data = response.json()
             
         except Timeout:
-            # Handle timeout errors explicitly
+            # Make timeouts easier to understand.
             raise ExternalServiceError(
                 "Unsplash API request timed out. Please try again.",
                 error_code="UNSPLASH_TIMEOUT",
             )
         except ConnectionError as e:
-            # Handle network connection errors
+            # Make connection problems easier to understand.
             raise ExternalServiceError(
                 "Failed to connect to Unsplash API. Check your internet connection.",
                 error_code="CONNECTION_ERROR",
             )
         except RequestException as e:
-            # Handle other HTTP request errors
+            # Handle other request problems.
             raise ExternalServiceError(
                 f"Unsplash API request failed: {str(e)}",
                 error_code="UNSPLASH_REQUEST_FAILED",
             )
         except ValueError as e:
-            # Handle JSON parsing errors
+            # Handle bad JSON.
             raise ExternalServiceError(
                 "Unsplash API returned invalid JSON response.",
                 error_code="INVALID_RESPONSE",
             )
         
-        # ====================================================================
-        # NORMALIZE AND RETURN RESULTS
-        # ====================================================================
+        # Clean up the Unsplash results for the app.
         
-        # Extract the list of photos from the response
-        # The API returns { "results": [...], "total": N, "total_pages": N }
+        # Photos live in the "results" list.
         results = data.get("results", [])
         
-        # Normalize each photo into our standard format
+        # Give every photo the same names.
         normalized_photos = []
         for photo in results:
             normalized = self._normalize_photo(photo)
@@ -287,21 +276,20 @@ class UnsplashClient:
             >>> normalized = client._normalize_photo(raw)
             >>> print(normalized["alt_text"])  # "A sunset over water"
         """
-        # Extract URLs object (safely handle missing data)
+        # Pull out the image URLs.
         urls = photo.get("urls", {})
         
-        # Extract alt text (API provides this as "alt_description")
-        # Fallback to generic text if not provided
+        # Use Unsplash's description when it exists.
         alt_text = (
             photo.get("alt_description") or
             photo.get("description") or
             "Image from Unsplash"
         )
         
-        # Build and return normalized photo dictionary
+        # Return the photo shape the app uses.
         return {
             "id": photo.get("id", ""),
-            "source": "unsplash",  # Always identify source as Unsplash
+            "source": "unsplash",  # Remember the photo source.
             "image_url": urls.get("regular", ""),
             "thumbnail_url": urls.get("small", ""),
             "width": photo.get("width", 0),

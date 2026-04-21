@@ -19,10 +19,12 @@ class Color:
     
     def to_hex(self) -> str:
         """Convert color to hexadecimal representation."""
+        # Keep tiny values like 7 as "07".
         return f"#{self.r:02x}{self.g:02x}{self.b:02x}"
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert color to dictionary."""
+        # Include the numbers and the hex color.
         return {
             "r": self.r,
             "g": self.g,
@@ -44,6 +46,7 @@ class ImageFeatures:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert image features to dictionary."""
+        # Turn color objects into plain data.
         return {
             "image_url": self.image_url,
             "dominant_colors": [c.to_dict() for c in self.dominant_colors],
@@ -68,6 +71,7 @@ class Moodboard:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert moodboard to dictionary."""
+        # Use names the frontend already knows.
         return {
             "id": self.id,
             "title": self.title,
@@ -90,6 +94,7 @@ class GenerateMoodboardRequest:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert request to dictionary."""
+        # Some code wants a plain dictionary.
         return {
             "query": self.query,
             "num_images": self.num_images,
@@ -108,6 +113,7 @@ class PreviewFeaturesRequest:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert request to dictionary."""
+        # Keep the preview options together.
         return {
             "image_url": self.image_url,
             "extract_colors": self.extract_colors,

@@ -14,8 +14,8 @@ See .env.example for required and optional variables.
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file (only if it exists)
-# This allows local development without requiring all environment variables to be set
+# Load local settings from .env when it exists.
+# This keeps secrets out of the code.
 load_dotenv()
 
 
@@ -29,9 +29,7 @@ class Config:
     3. Default values defined here (lowest priority)
     """
     
-    # ============================================================================
-    # FLASK APPLICATION SETTINGS
-    # ============================================================================
+    # Flask app settings.
     
     DEBUG = False
     """Enable/disable debug mode. When True, shows detailed error messages."""
@@ -39,10 +37,9 @@ class Config:
     TESTING = False
     """Enable/disable testing mode. When True, disables error catching during request handling."""
     
-    # ============================================================================
-    # SERVER SETTINGS
-    # ============================================================================
+    # Where the server runs.
     
+    # Let Flask run on a different port when needed.
     PORT = int(os.getenv("PORT", 5000))
     """
     Port on which the Flask server will listen.
@@ -59,9 +56,7 @@ class Config:
     Use "127.0.0.1" to only accept local connections.
     """
     
-    # ============================================================================
-    # ENVIRONMENT IDENTIFICATION
-    # ============================================================================
+    # Which setup we are using.
     
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
     """
@@ -71,9 +66,7 @@ class Config:
     Environment variable: FLASK_ENV
     """
     
-    # ============================================================================
-    # API SETTINGS
-    # ============================================================================
+    # API basics.
     
     API_VERSION = "v1"
     """API version string used in routes."""
@@ -81,10 +74,9 @@ class Config:
     JSON_SORT_KEYS = False
     """Whether to sort JSON response keys alphabetically."""
     
-    # ============================================================================
-    # UNSPLASH API CONFIGURATION
-    # ============================================================================
+    # Unsplash settings.
     
+    # Unsplash needs this key to search for images.
     UNSPLASH_ACCESS_KEY = os.getenv("UNSPLASH_ACCESS_KEY", "")
     """
     Your Unsplash API access key for searching images.
@@ -99,9 +91,7 @@ class Config:
     UNSPLASH_BASE_URL = "https://api.unsplash.com"
     """Base URL for the Unsplash API (do not change unless using a proxy)."""
     
-    # ============================================================================
-    # IMAGE PROCESSING SETTINGS
-    # ============================================================================
+    # Image size settings.
     
     MAX_IMAGE_SIZE = 1024
     """Maximum dimension (width or height) for downloaded images in pixels."""
@@ -109,10 +99,9 @@ class Config:
     MIN_IMAGE_SIZE = 256
     """Minimum dimension (width or height) for downloaded images in pixels."""
     
-    # ============================================================================
-    # MOODBOARD GENERATION SETTINGS
-    # ============================================================================
+    # Moodboard defaults.
     
+    # Use this when a request does not pick an image count.
     DEFAULT_NUM_IMAGES = int(os.getenv("DEFAULT_NUM_IMAGES", 5))
     """
     Default number of images to fetch when generating a moodboard.
@@ -124,6 +113,7 @@ class Config:
     Note: Higher values take longer to process.
     """
     
+    # Use this for palette detail.
     DEFAULT_NUM_CLUSTERS = int(os.getenv("DEFAULT_NUM_CLUSTERS", 5))
     """
     Default number of dominant colors to extract per image.
@@ -135,9 +125,7 @@ class Config:
     Note: This is used for color palette generation.
     """
     
-    # ============================================================================
-    # SERVICE TIMEOUTS
-    # ============================================================================
+    # Waiting limits.
     
     EXTERNAL_API_TIMEOUT = 10
     """
@@ -146,9 +134,7 @@ class Config:
     If an external service takes longer than this to respond, the request will fail.
     """
     
-    # ============================================================================
-    # LOGGING SETTINGS (Optional, for future use)
-    # ============================================================================
+    # Logging.
     
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     """
@@ -189,7 +175,7 @@ class TestingConfig(Config):
     TESTING = True
 
 
-# Dictionary mapping environment names to configuration classes
+# Match each environment name with its settings.
 config_by_name = {
     "development": DevelopmentConfig,
     "production": ProductionConfig,
@@ -220,10 +206,10 @@ def get_config(config_name=None):
         >>> dev_config = get_config("development")  # Force development config
     """
     if config_name is None:
-        # Use FLASK_ENV environment variable if not specified
+        # Use FLASK_ENV when nothing was passed in.
         config_name = os.getenv("FLASK_ENV", "development")
     
-    # Get the configuration class, default to DevelopmentConfig if not found
+    # Unknown names use the local settings.
     config_class = config_by_name.get(config_name, config_by_name["default"])
     
     return config_class

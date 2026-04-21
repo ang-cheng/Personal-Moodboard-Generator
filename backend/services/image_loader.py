@@ -60,8 +60,7 @@ class ImageLoader:
                 error_code="IMAGE_DOWNLOAD_FAILED",
             )
 
-        # Convert raw bytes into a 1D uint8 array. cv2.imdecode expects this
-        # encoded byte buffer, not the final height x width x channels image.
+        # Turn the download into something OpenCV can read.
         image_bytes = np.frombuffer(response.content, dtype=np.uint8)
 
         if image_bytes.size == 0:
@@ -103,6 +102,7 @@ class ImageLoader:
             if not isinstance(record, dict):
                 continue
 
+            # No URL means no image to load.
             image_url = record.get("image_url")
             if not image_url:
                 continue
@@ -110,8 +110,7 @@ class ImageLoader:
             try:
                 image = self.load_image_from_url(image_url)
             except (ExternalServiceError, ImageProcessingError, ValidationError):
-                # Skip images that are missing, unavailable, or not decodable.
-                # Batch callers can still use the images that loaded correctly.
+                # Skip broken images and keep going.
                 continue
 
             loaded_images.append(
@@ -175,6 +174,7 @@ class ImageLoader:
 
         scale = max_dimension / largest_dimension
         new_size = (int(width * scale), int(height * scale))
+        # This works well when making photos smaller.
         return cv2.resize(image, new_size, interpolation=cv2.INTER_AREA)
 
     def convert_to_rgb(self, image: np.ndarray) -> np.ndarray:

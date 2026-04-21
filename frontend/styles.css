@@ -14,27 +14,53 @@
 body {
   min-height: 100vh;
   margin: 0;
+  padding-top: 74px;
 }
 
 button,
+input,
 textarea {
   font: inherit;
+}
+
+.site-header {
+  /* Keep this at the top while scrolling. */
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 32px;
+  background: rgba(255, 253, 248, 0.96);
+  border-bottom: 1px solid #ded7cb;
+  backdrop-filter: blur(14px);
 }
 
 .app-shell {
   display: grid;
   grid-template-columns: minmax(320px, 440px) minmax(0, 1fr);
-  min-height: 100vh;
+  min-height: calc(100vh - 74px);
+}
+
+.app-shell:has(.composer.hidden) {
+  /* Let the gallery spread out when the form is hidden. */
+  grid-template-columns: 1fr;
 }
 
 .composer {
+  /* Keep the form next to the results on wide screens. */
   position: sticky;
-  top: 0;
+  top: 74px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 28px;
-  height: 100vh;
+  height: calc(100vh - 74px);
   padding: 48px;
   background: #fffdf8;
   border-right: 1px solid #ded7cb;
@@ -63,9 +89,14 @@ textarea {
 h1 {
   max-width: 11ch;
   margin: 0;
-  font-size: clamp(3rem, 7vw, 5.5rem);
+  display: grid;
+  font-size: clamp(2.2rem, 4.7vw, 3.9rem);
   line-height: 0.95;
   letter-spacing: 0;
+}
+
+.headline-emphasis {
+  font-style: italic;
 }
 
 h2,
@@ -87,10 +118,9 @@ label,
   text-transform: uppercase;
 }
 
+input,
 textarea {
   width: 100%;
-  min-height: 150px;
-  resize: vertical;
   padding: 16px;
   border: 1px solid #b9aa97;
   border-radius: 8px;
@@ -99,6 +129,16 @@ textarea {
   line-height: 1.5;
 }
 
+input {
+  min-height: 46px;
+}
+
+textarea {
+  min-height: 150px;
+  resize: vertical;
+}
+
+input:focus,
 textarea:focus {
   outline: 3px solid #ffd166;
   outline-offset: 2px;
@@ -108,6 +148,11 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.form-actions button {
+  min-width: 140px;
+  min-height: 46px;
 }
 
 button {
@@ -143,21 +188,16 @@ button:disabled {
   background: #7f1d1d;
 }
 
-#status,
 .subtle {
   color: #62584b;
   font-weight: 700;
-}
-
-#status {
-  min-height: 22px;
 }
 
 .workspace {
   display: grid;
   align-content: start;
   gap: 28px;
-  min-height: 100vh;
+  min-height: calc(100vh - 74px);
   padding: 40px;
   background:
     linear-gradient(90deg, rgba(23, 23, 23, 0.08) 1px, transparent 1px),
@@ -165,19 +205,26 @@ button:disabled {
   background-size: 34px 34px;
 }
 
+.workspace:has(> .empty-state:not(.hidden)) {
+  /* Center the first-prompt box only on the Generate tab. */
+  align-content: center;
+  justify-items: center;
+}
+
 .tabs {
   display: inline-flex;
   width: fit-content;
   padding: 6px;
-  border: 1px solid #ded7cb;
+  border: 0;
   border-radius: 8px;
-  background: rgba(255, 253, 248, 0.94);
+  background: transparent;
 }
 
 .tab-button {
   min-height: 40px;
   padding: 0 18px;
   border-radius: 6px;
+  border: 0;
   background: transparent;
   color: #62584b;
 }
@@ -190,6 +237,8 @@ button:disabled {
 .empty-state {
   display: grid;
   place-items: center;
+  align-self: center;
+  justify-self: center;
   width: min(100%, 720px);
   min-height: 420px;
   margin: auto;
@@ -221,6 +270,11 @@ button:disabled {
   line-height: 1;
 }
 
+.gallery-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .moodboard-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -228,7 +282,10 @@ button:disabled {
 }
 
 .moodboard-list.compact {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  /* Keep saved boards the same size, even when there is only one. */
+  grid-template-columns: repeat(auto-fill, 320px);
+  align-items: start;
+  justify-content: start;
 }
 
 .moodboard-card {
@@ -256,6 +313,18 @@ button:disabled {
 .card-header h3 {
   font-size: 1.45rem;
   line-height: 1.15;
+}
+
+.card-title-area {
+  min-width: 0;
+  flex: 1;
+}
+
+.rename-input {
+  /* The rename box sits where the title normally lives. */
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
 }
 
 .card-actions {
@@ -308,6 +377,7 @@ button:disabled {
 }
 
 .compact-grid img {
+  width: 100%;
   aspect-ratio: 1;
 }
 
@@ -326,8 +396,26 @@ button:disabled {
 }
 
 @media (max-width: 900px) {
+  body {
+    padding-top: 126px;
+  }
+
+  .site-header {
+    min-height: 126px;
+    align-items: stretch;
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 18px;
+  }
+
+  .brand-row {
+    justify-content: center;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
+    min-height: calc(100vh - 126px);
   }
 
   .composer {
@@ -340,7 +428,7 @@ button:disabled {
 
   h1 {
     max-width: 12ch;
-    font-size: 3.4rem;
+    font-size: 2.9rem;
   }
 
   .workspace {
@@ -355,6 +443,10 @@ button:disabled {
 
   .moodboard-list {
     grid-template-columns: 1fr;
+  }
+
+  .moodboard-list.compact {
+    grid-template-columns: minmax(0, 320px);
   }
 }
 
@@ -379,6 +471,10 @@ button:disabled {
 
   .image-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .moodboard-list.compact {
+    grid-template-columns: 1fr;
   }
 
   button,

@@ -26,9 +26,11 @@ class Clusterer:
             tests and classroom demos.
     """
 
-    def __init__(self, random_state: int = 42):
+    def __init__(self, random_state: int = 42, images_per_moodboard: int = 6):
         """Store clustering configuration."""
+        # Each card should show the same number of images.
         self.random_state = random_state
+        self.images_per_moodboard = images_per_moodboard
 
     def cluster_items(self, items: list[dict], num_clusters: int) -> list[dict]:
         """
@@ -58,18 +60,22 @@ class Clusterer:
         if not valid_items:
             return []
 
-        # KMeans cannot create more clusters than there are data points, so we
-        # reduce the requested value when the batch is small.
+        # Do not make more groups than images.
         cluster_count = min(num_clusters, len(valid_items))
 
         try:
+            # Put each image's colors into one row.
             feature_matrix = np.array(
                 [item["feature_vector"] for item in valid_items],
                 dtype=np.float32,
             )
 
             labels = self._cluster_feature_matrix(feature_matrix, cluster_count)
-            return self._build_cluster_response(valid_items, labels, cluster_count)
+            return self._build_cluster_response(
+                valid_items,
+                labels,
+                cluster_count,
+            )
 
         except Exception as exc:
             raise ImageProcessingError(f"Failed to cluster items: {str(exc)}")
@@ -92,7 +98,7 @@ class Clusterer:
                 continue
 
             try:
-                # Check that every feature value can be treated as a number.
+                # Keep only number rows.
                 numeric_vector = [float(value) for value in feature_vector]
             except (TypeError, ValueError):
                 continue
@@ -145,6 +151,9 @@ class Clusterer:
             if not cluster_items:
                 continue
 
+            # Add images to short groups so the cards look even.
+            display_items = self._fill_cluster_items(cluster_items, items)
+
             clusters.append(
                 {
                     "id": f"cluster_{cluster_index}",
@@ -156,12 +165,42 @@ class Clusterer:
                     },
                     "images": [
                         self._normalize_image_item(item, f"cluster_{cluster_index}")
-                        for item in cluster_items
+                        for item in display_items
                     ],
                 }
             )
 
         return clusters
+
+    def _fill_cluster_items(
+        self,
+        cluster_items: list[dict],
+        all_items: list[dict],
+    ) -> list[dict]:
+        """
+        Return enough images for a full moodboard card when possible.
+
+        KMeans clusters are naturally uneven, so a cluster may only contain a
+        few images. The UI expects eight images per moodboard, so short clusters
+        are topped up with other loaded images while avoiding duplicates inside
+        a single card.
+        """
+        display_items = list(cluster_items[: self.images_per_moodboard])
+        seen_ids = {item.get("id") for item in display_items}
+
+        for item in all_items:
+            if len(display_items) >= self.images_per_moodboard:
+                break
+
+            item_id = item.get("id")
+            if item_id in seen_ids:
+                continue
+
+            # These extras are just for the card preview.
+            display_items.append(item)
+            seen_ids.add(item_id)
+
+        return display_items
 
     def _summarize_hex_colors(self, items: list[dict], limit: int = 5) -> list[str]:
         """
